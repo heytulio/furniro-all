@@ -1,3 +1,4 @@
+import bcrypt from "bcrypt";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -167,6 +168,30 @@ const initialProducts = [
 ];
 
 const categories = ["Dining", "Living", "Bedroom"];
+const initialUsers = [
+  {
+    name: "Ana",
+    surname: "Silva",
+    username: "ana.silva",
+    email: "ana.silva@furniro.com",
+    password: "Furniro@123",
+  },
+  {
+    name: "Bruno",
+    surname: "Costa",
+    username: "bruno.costa",
+    email: "bruno.costa@furniro.com",
+    password: "Furniro@456",
+  },
+  {
+    name: "Carla",
+    surname: "Oliveira",
+    username: "carla.oliveira",
+    email: "carla.oliveira@furniro.com",
+    password: "Furniro@789",
+  },
+];
+
 const generatedProducts = Array.from({ length: 23 }).map((_, index) => {
   const base = initialProducts[index % initialProducts.length];
   const itemNum = index + 10;
@@ -204,8 +229,26 @@ async function main() {
     });
   }
 
+  for (const user of initialUsers) {
+    const hashedPassword = await bcrypt.hash(user.password, 13);
+
+    await prisma.user.upsert({
+      where: { username: user.username },
+      update: {
+        name: user.name,
+        surname: user.surname,
+        email: user.email,
+        password: hashedPassword,
+      },
+      create: {
+        ...user,
+        password: hashedPassword,
+      },
+    });
+  }
+
   console.log(
-    `✅ Seed concluído com sucesso! Total de ${allProducts.length} produtos cadastrados com URLs do Cloudinary.`,
+    `✅ Seed concluído com sucesso! Total de ${allProducts.length} produtos e ${initialUsers.length} usuários cadastrados.`,
   );
 }
 
