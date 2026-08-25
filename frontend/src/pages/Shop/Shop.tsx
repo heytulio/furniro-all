@@ -2,11 +2,11 @@ import { ProductGridSkeleton } from "@/components/Skeletons/ProductGridSkeleton"
 import { useProducts } from "@/hooks/useProducts";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import Benefits from "../components/Benefits/Benefits";
-import Pagination from "../components/Pagination/Pagination";
-import ProductGrid from "../components/ProductGrid/ProductGrid";
-import PageBanner from "../components/Shop/PageBanner";
-import ShopToolBar from "../components/ShopToolBar/ShopToolBar";
+import Benefits from "@/components/Benefits/Benefits";
+import Pagination from "@/components/Pagination/Pagination";
+import ProductGrid from "@/components/ProductGrid/ProductGrid";
+import PageBanner from "@/components/Shop/PageBanner";
+import ShopToolBar from "@/components/ShopToolBar/ShopToolBar";
 
 export const Shop = () => {
   const { category: categoryParam } = useParams();
