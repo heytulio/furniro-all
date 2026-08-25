@@ -6,6 +6,7 @@ import errorHandler from "./middlewares/errorHandler";
 import { requestLogger } from "./middlewares/loggerMiddleware";
 import productsRouter from "./routes/productRouter";
 import authRouter from "./routes/authRouter";
+import cartRouter from "./routes/cartRouter";
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.get("/", (req: Request, res: Response) => {
 
 app.use("/products", productsRouter);
 app.use("/auth", authRouter);
+app.use("/cart", cartRouter);
 
 app.use(errorHandler);
 
