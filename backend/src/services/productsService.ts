@@ -6,14 +6,10 @@ import {
   ProductQueryParams,
   ProductUpdateDTO,
 } from "../model/product";
-import Service from "./iService";
+import ProductService from "./iProductService";
 import Repository from "../repositories/iRepository";
 
-export default class ProductService implements Service<
-  Product,
-  ProductCreateDTO,
-  ProductUpdateDTO
-> {
+export default class ProductServiceImpl implements ProductService {
   constructor(
     private productRepository: Repository<
       Product,
