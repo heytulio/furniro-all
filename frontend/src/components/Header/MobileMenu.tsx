@@ -2,7 +2,7 @@ import clsx from "clsx";
 import { useState } from "react";
 import { LuMenu } from "react-icons/lu";
 import NavMenu from "./NavMenu";
-import RightMenu from "./RigthMenu";
+import RightMenu from "./RightMenu";
 
 type MobileMenuProps = {
   className?: string;

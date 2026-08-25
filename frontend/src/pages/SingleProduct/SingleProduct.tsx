@@ -1,14 +1,14 @@
 import { SingleProductSkeleton } from "@/components/Skeletons/SingleProductSkeleton";
 import { useParams } from "react-router";
-import { buildProductTabs } from "../builders/buildProductTabs";
-import Breadcrumb from "../components/BreadCrumb/BreadCrumb";
-import ProductDetails from "../components/ProductDetails";
-import ProductGallery from "../components/ProductGallery";
-import ProductInfo from "../components/ProductInfo";
-import RelatedProducts from "../components/RelatedProducts";
-import ErrorState from "../components/Status/ErrorState";
-import NotFoundState from "../components/Status/NotFoundState";
-import { useProduct } from "../hooks/useProduct";
+import { buildProductTabs } from "../../builders/buildProductTabs";
+import Breadcrumb from "../../components/BreadCrumb/BreadCrumb";
+import ProductDetails from "../../components/ProductDetails";
+import ProductGallery from "../../components/ProductGallery";
+import ProductInfo from "../../components/ProductInfo";
+import RelatedProducts from "../../components/RelatedProducts";
+import ErrorState from "../../components/Status/ErrorState";
+import NotFoundState from "../../components/Status/NotFoundState";
+import { useProduct } from "../../hooks/useProduct";
 
 export const SingleProduct = () => {
   const { id, slug } = useParams();

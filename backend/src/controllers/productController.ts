@@ -6,17 +6,11 @@ import {
   ProductQueryParams,
   ProductUpdateDTO,
 } from "../model/product";
-import Service from "../services/iService";
+import ProductService from "../services/iProductService";
 import Controller from "./iController";
 
 export default class ProductController implements Controller<Product> {
-  constructor(
-    private productService: Service<
-      Product,
-      ProductCreateDTO,
-      ProductUpdateDTO
-    >,
-  ) {}
+  constructor(private productService: ProductService) {}
 
   private getIdentifierFromParams(req: Request): string {
     const identifier = req.params.slug ?? req.params.id;

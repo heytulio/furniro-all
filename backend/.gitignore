@@ -11,6 +11,8 @@ build/
 .env.*
 !.env.example
 
+*.http
+
 # Logs & Debug
 logs/
 *.log

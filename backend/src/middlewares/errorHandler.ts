@@ -13,6 +13,7 @@ const errorHandler = (
     console.warn(`[${timestamp}] AppError (${err.statusCode}): ${err.message}`);
     res.status(err.statusCode).json({
       error: err.message,
+      ...(err.details !== undefined ? { details: err.details } : {}),
     });
     return;
   }
