@@ -2,6 +2,7 @@ import { Toaster } from "react-hot-toast";
 import { Outlet } from "react-router";
 import Footer from "./components/Footer/Footer";
 import Header from "./components/Header/Header";
+import { CartDrawer } from "./components/CartDrawer";
 
 export function RootLayout() {
   return (
@@ -9,6 +10,7 @@ export function RootLayout() {
       <Toaster />
       <Header />
       <Outlet />
+      <CartDrawer />
       <Footer />
     </>
   );
