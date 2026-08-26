@@ -1,8 +1,16 @@
 import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import { useNavigate, Link } from "react-router";
+import { useLocation, useNavigate, Link } from "react-router";
 import InputFormLogin from "./inputFormLogin";
 import { useLogin } from "@/hooks/useLogin";
+
+type LoginLocationState = {
+  from?: {
+    pathname?: string;
+    search?: string;
+    hash?: string;
+  };
+};
 
 export default function FormLogin() {
   const [email, setEmail] = useState("");
@@ -13,6 +21,7 @@ export default function FormLogin() {
 
   const { login, loading, error } = useLogin();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const validateEmail = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -47,7 +56,13 @@ export default function FormLogin() {
     if (!emailError && !passwordError && email && password) {
       const success = await login(email, password);
       if (success) {
-        navigate("/");
+        const state = location.state as LoginLocationState | null;
+        const from = state?.from;
+        const destination = from?.pathname?.startsWith("/")
+          ? `${from.pathname}${from.search ?? ""}${from.hash ?? ""}`
+          : "/";
+
+        navigate(destination, { replace: true });
       }
     }
   };
