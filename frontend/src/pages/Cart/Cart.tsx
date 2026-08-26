@@ -1,8 +1,8 @@
-import Benefits from "../components/Benefits/Benefits";
-import { CartHeaders } from "../components/Cart/CartHeaders";
-import { CartList } from "../components/Cart/CartList";
-import { CartTotals } from "../components/Cart/CartTotals";
-import PageBanner from "../components/Shop/PageBanner";
+import Benefits from "../../components/Benefits/Benefits";
+import { CartHeaders } from "../../components/Cart/CartHeaders";
+import { CartList } from "../../components/Cart/CartList";
+import { CartTotals } from "../../components/Cart/CartTotals";
+import PageBanner from "../../components/Shop/PageBanner";
 
 export const Cart = () => {
   return (

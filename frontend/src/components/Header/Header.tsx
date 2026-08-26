@@ -2,7 +2,7 @@ import clsx from "clsx";
 import Logo from "./Logo";
 import MobileMenu from "./MobileMenu";
 import NavMenu from "./NavMenu";
-import RightMenu from "./RigthMenu";
+import RightMenu from "./RightMenu";
 
 const Header = () => {
   return (
