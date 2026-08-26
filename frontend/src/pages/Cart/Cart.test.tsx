@@ -6,7 +6,6 @@ import { beforeEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { useCartStore, type CartItem } from "@/stores/cart.store";
 import { Cart } from "./Cart";
 
-// jsdom does not implement matchMedia, required by react-hot-toast's real <Toaster />
 beforeAll(() => {
   Object.defineProperty(window, "matchMedia", {
     writable: true,
