@@ -13,7 +13,7 @@ import Profile from "./pages/Profile/Profile";
 import { CartSyncProvider } from "./components/Cart/CartSyncProvider";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Contact } from "./pages/Contact/Contact";
-import { Checkout } from "./pages/Checkout/Checkout";
+import Checkout from "./pages/Checkout/Checkout";
 
 export default function App() {
   return (
