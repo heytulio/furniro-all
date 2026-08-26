@@ -1,4 +1,3 @@
-// src/stores/cart.store.ts
 import type { Product } from "@/types/product";
 import { calculateDiscount } from "@/utils/price";
 import { create } from "zustand";
@@ -15,9 +14,9 @@ export interface CartItem extends CartProduct {
 
 interface CartState {
   items: CartItem[];
-  isOpen: boolean; // 1. Novo estado de visibilidade
+  isOpen: boolean;
 
-  openCart: () => void; // 2. Novas ações
+  openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
 
@@ -41,7 +40,7 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
-      isOpen: false, // Estado inicial fechado
+      isOpen: false,
 
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),
@@ -55,7 +54,7 @@ export const useCartStore = create<CartState>()(
 
           if (existingItem) {
             return {
-              isOpen: true, // Abre o drawer ao adicionar item
+              isOpen: true,
               items: state.items.map((item) =>
                 item.id === product.id
                   ? { ...item, quantity: item.quantity + quantity }
@@ -65,7 +64,7 @@ export const useCartStore = create<CartState>()(
           }
 
           return {
-            isOpen: true, // Abre o drawer ao adicionar item
+            isOpen: true,
             items: [...state.items, { ...product, quantity }],
           };
         });
@@ -151,7 +150,7 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "cart-storage",
-      partialize: (state) => ({ items: state.items }), // Apenas os itens continuam salvos no localStorage
+      partialize: (state) => ({ items: state.items }),
     },
   ),
 );
