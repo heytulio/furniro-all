@@ -1,3 +1,4 @@
+// src/stores/cart.store.ts
 import type { Product } from "@/types/product";
 import { calculateDiscount } from "@/utils/price";
 import { create } from "zustand";
@@ -14,6 +15,11 @@ export interface CartItem extends CartProduct {
 
 interface CartState {
   items: CartItem[];
+  isOpen: boolean; // 1. Novo estado de visibilidade
+
+  openCart: () => void; // 2. Novas ações
+  closeCart: () => void;
+  toggleCart: () => void;
 
   addItem: (product: CartProduct, quantity?: number) => void;
   removeItem: (id: string) => void;
@@ -25,6 +31,7 @@ interface CartState {
 
   getItemQuantity: (id: string) => number;
   getItemSubtotal: (id: string) => number;
+  getTotalDiscount: () => number;
   getTotalItems: () => number;
   getSubtotal: () => number;
   getTotal: () => number;
@@ -34,6 +41,11 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      isOpen: false, // Estado inicial fechado
+
+      openCart: () => set({ isOpen: true }),
+      closeCart: () => set({ isOpen: false }),
+      toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
 
       addItem: (product, quantity = 1) => {
         set((state) => {
@@ -43,6 +55,7 @@ export const useCartStore = create<CartState>()(
 
           if (existingItem) {
             return {
+              isOpen: true, // Abre o drawer ao adicionar item
               items: state.items.map((item) =>
                 item.id === product.id
                   ? { ...item, quantity: item.quantity + quantity }
@@ -52,6 +65,7 @@ export const useCartStore = create<CartState>()(
           }
 
           return {
+            isOpen: true, // Abre o drawer ao adicionar item
             items: [...state.items, { ...product, quantity }],
           };
         });
@@ -117,6 +131,15 @@ export const useCartStore = create<CartState>()(
         );
       },
 
+      getTotalDiscount: (): number => {
+        return get().items.reduce((total, item) => {
+          const discountPerUnit =
+            item.price - calculateDiscount(item.price, item.discount);
+
+          return total + discountPerUnit * item.quantity;
+        }, 0);
+      },
+
       getTotal: () => {
         return get().items.reduce(
           (total, item) =>
@@ -128,7 +151,7 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "cart-storage",
-      partialize: (state) => ({ items: state.items }),
+      partialize: (state) => ({ items: state.items }), // Apenas os itens continuam salvos no localStorage
     },
   ),
 );

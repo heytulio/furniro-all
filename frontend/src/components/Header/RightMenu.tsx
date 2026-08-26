@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { useCartStore } from "../../stores/cart.store";
 import { useAuth } from "@/contexts/useAuth";
 import { UserDropdown } from "./UserDropdown";
+import { ShoppingCart } from "lucide-react";
 
 type RightMenuProps = {
   className?: string;
@@ -12,6 +13,7 @@ const LinkHover = "hover:cursor-pointer hover:scale-110 transition";
 
 const RightMenu = ({ className }: RightMenuProps) => {
   const { isAuthenticated } = useAuth();
+  const openCart = useCartStore((s) => s.openCart);
   const totalItems = useCartStore((s) => s.getTotalItems());
 
   return (
@@ -28,27 +30,18 @@ const RightMenu = ({ className }: RightMenuProps) => {
         </Link>
       )}
 
-      <Link to="/cart" className={clsx(LinkHover, "relative")}>
-        <img
-          src="/Icons/shop.svg"
-          alt="Ícone de carrinho de compras"
-          className="max-h-[22.05px]"
-        />
+      <button
+        type="button"
+        onClick={openCart}
+        className="relative cursor-pointer transition hover:scale-105"
+      >
+        <ShoppingCart size={24} />
         {totalItems > 0 && (
-          <span
-            className={clsx(
-              "absolute -top-3 -right-3",
-              "w-4.5 h-4.5",
-              "rounded-full",
-              "bg-over-secundary",
-              "text-white text-xs font-bold",
-              "flex justify-center items-center",
-            )}
-          >
+          <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-over-secundary text-xs font-bold text-white">
             {totalItems}
           </span>
         )}
-      </Link>
+      </button>
     </div>
   );
 };
