@@ -12,6 +12,7 @@ API RESTful para a aplicação Furniro desenvolvida com Node.js, Express, TypeSc
 
 [Como rodar](#como-rodar-o-backend-localmente) &nbsp;•&nbsp;
 [Banco de dados](#banco-de-dados-e-prisma-orm-sqlite) &nbsp;•&nbsp;
+[Redis](#redis) &nbsp;•&nbsp;
 [Modo dev](#executar-a-api-em-modo-de-desenvolvimento) &nbsp;•&nbsp;
 [Docker](#executar-a-api-com-docker) &nbsp;•&nbsp;
 [Endpoints](#endpoints-principais) &nbsp;•&nbsp;
@@ -21,6 +22,7 @@ API RESTful para a aplicação Furniro desenvolvida com Node.js, Express, TypeSc
 
 [How to run](#how-to-run-the-backend-locally) &nbsp;•&nbsp;
 [Database](#database-and-prisma-orm-sqlite) &nbsp;•&nbsp;
+[Redis](#redis-1) &nbsp;•&nbsp;
 [Dev mode](#running-the-api-in-development-mode) &nbsp;•&nbsp;
 [Docker](#running-the-api-with-docker) &nbsp;•&nbsp;
 [Endpoints](#main-endpoints) &nbsp;•&nbsp;
@@ -85,6 +87,49 @@ npm run db:seed
 
 ---
 
+## Redis
+
+O Redis é utilizado para o **blacklist de tokens JWT**. Quando um usuário faz logout, o `jti` do token é armazenado no Redis com TTL restante. O middleware de autenticação verifica essa blacklist a cada requisição protegida.
+
+**Sem o Redis rodando, os endpoints de auth não funcionarão corretamente** (login e register podem até funcionar, mas logout e verificação de token revogado falharão).
+
+### Opção 1: Redis local
+
+Instale o Redis no seu sistema e inicie o servidor:
+
+```bash
+# macOS (Homebrew)
+brew services start redis
+
+# Linux (APT)
+sudo systemctl start redis
+
+# Windows (via WSL ou Docker recomendado)
+```
+
+Configure o `.env`:
+
+```txt
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=redis-password
+```
+
+### Opção 2: Docker Compose (recomendado)
+
+O `docker-compose.yaml` já sobe o Redis junto com a aplicação:
+
+```bash
+docker compose up -d
+```
+
+Isso inicia dois containers:
+
+- `redis` — Redis Alpine com senha
+- `web` — a aplicação Node.js (conecta ao Redis via hostname `redis`)
+
+---
+
 ## Executar a API em Modo de Desenvolvimento
 
 ```bash
@@ -97,25 +142,35 @@ O servidor estará rodando em `http://localhost:3000`.
 
 ## Executar a API com Docker
 
-### 1. Criar o arquivo de ambiente
+### Com Docker Compose (recomendado)
 
-Antes de subir o container, crie o arquivo `.env` com as variáveis necessárias, copiando o arquivo de exemplo:
+O `docker-compose.yaml` sobe a aplicação e o Redis juntos:
 
 ```bash
 cp .env.example .env
+docker compose up -d
 ```
 
-### 2. Construir a imagem Docker
-
-No diretório do backend, execute:
+Para verificar os containers:
 
 ```bash
+docker compose ps
+```
+
+Para parar e remover:
+
+```bash
+docker compose down
+```
+
+### Somente a aplicação (sem Docker Compose)
+
+Se já tiver um Redis rodando localmente, pode subir só o container da API:
+
+```bash
+cp .env.example .env
+# Ajuste REDIS_HOST para localhost no .env
 docker build -t api-furniro .
-```
-
-### 3. Rodar o container
-
-```bash
 docker run -p 3000:3000 --name api-furniro --env-file .env -d api-furniro
 ```
 
@@ -123,19 +178,6 @@ O backend ficará disponível em:
 
 ```text
 http://localhost:3000
-```
-
-### 4. Verificar o container
-
-```bash
-docker ps -a
-```
-
-### 5. Parar e remover o container
-
-```bash
-docker stop api-furniro
-docker rm api-furniro
 ```
 
 ---
@@ -150,6 +192,51 @@ docker rm api-furniro
 - `POST /products` — cria um produto
 - `PUT /products/:id` — atualiza um produto
 - `DELETE /products/:id` — remove um produto
+
+### Autenticação
+
+- `POST /auth/register` — cadastro de novo usuário
+- `POST /auth/login` — autenticação e geração de JWT (cookie httpOnly)
+- `POST /auth/logout` — revogação do token e limpeza do cookie
+- `GET /auth/me` — retorna o perfil do usuário autenticado
+- `PATCH /auth/me` — atualiza o perfil do usuário autenticado
+
+#### Cadastro (`POST /auth/register`)
+
+Body:
+
+```json
+{
+  "name": "string (min 2)",
+  "surname": "string (min 2)",
+  "username": "string (min 3, unique)",
+  "email": "string (email, unique)",
+  "password": "string (min 6)"
+}
+```
+
+Resposta `201`: usuário criado (sem senha).
+
+#### Login (`POST /auth/login`)
+
+Body:
+
+```json
+{
+  "email": "string",
+  "password": "string"
+}
+```
+
+Resposta `200`: cookie `token` (httpOnly, 24h) + dados do usuário.
+
+#### Logout (`POST /auth/logout`)
+
+Resposta `204`: revoga o JWT no Redis e limpa o cookie.
+
+#### Perfil (`GET /auth/me` / `PATCH /auth/me`)
+
+Requer cookie `token` válido. Retorna ou atualiza os dados do usuário autenticado.
 
 ### Query params suportados na listagem
 
@@ -179,6 +266,10 @@ Exemplos:
 - Suporte a ordenação por preço com `_sort=price` e `_order=asc|desc`
 - Adição do campo `slug` para melhor compatibilidade com URLs amigáveis
 - Separação de rotas para detalhe por `id` e por `slug`
+- Autenticação JWT com cookies httpOnly
+- Endpoints de registro, login, logout e perfil (`/auth/*`)
+- Middleware de autenticação com blacklist via Redis
+- Validação de requisições com Zod
 
 ---
 
@@ -192,7 +283,11 @@ O backend segue uma organização em camadas para facilitar manutenção e evolu
 - `src/routes` — define as rotas da API
 - `src/factories` — cria as dependências entre controller, service e repository
 - `src/model` — define os tipos e contratos usados no projeto
+- `src/schemas` — validação com Zod das requisições
+- `src/middlewares` — autenticação JWT e validação de schemas
 - `src/exceptions` — centraliza erros personalizados da aplicação
+- `src/lib/redis` — cliente ioredis (singleton)
+- `src/lib/cache` — abstração de cache (CacheClient) com implementação Redis
 
 Essa separação permite trocar a implementação do repositório sem impactar o restante do sistema.
 
@@ -215,6 +310,16 @@ Essa separação permite trocar a implementação do repositório sem impactar o
 - `colors`: Array JSON serializado com opções de cores (ex: `["#816DFA", "#000000"]`)
 - `sizes`: Array JSON serializado com opções de tamanhos (ex: `["L", "XL", "XS"]`)
 - `isNew`: Indicador booleano de novidade
+
+### Entidade `User` (Schema)
+
+- `id`: UUID (Chave primária)
+- `name`: Nome do usuário
+- `surname`: Sobrenome do usuário
+- `username`: Nome de usuário único
+- `email`: Email único
+- `password`: Senha hasheada com bcrypt
+- `createdAt`: Data de criação (auto)
 
 ### Formato esperado para criação/atualização (exemplos)
 
@@ -287,10 +392,6 @@ Observação: se `limit` for maior que `100`, a API retornará erro 400.
 
 ## Autores / Authors
 
-- [Bruna Narciso](https://github.com/Bruna-Narciso)
-- [Bryan Belo](https://github.com/Badadia)
-- [Gian Lucas](https://github.com/gkgiann)
-- [Jefferson Tenório](https://github.com/Jefferson-Tenorio)
 - [Tulio Vasconcelos](https://github.com/heytulio)
 
 ---
@@ -348,6 +449,49 @@ npm run db:seed
 
 ---
 
+## Redis
+
+Redis is used for the **JWT token blacklist**. When a user logs out, the token's `jti` is stored in Redis with the remaining TTL. The authentication middleware checks this blacklist on every protected request.
+
+**Without Redis running, the auth endpoints will not work correctly** (login and register may work, but logout and revoked token verification will fail).
+
+### Option 1: Local Redis
+
+Install Redis on your system and start the server:
+
+```bash
+# macOS (Homebrew)
+brew services start redis
+
+# Linux (APT)
+sudo systemctl start redis
+
+# Windows (via WSL or Docker recommended)
+```
+
+Configure `.env`:
+
+```txt
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=redis-password
+```
+
+### Option 2: Docker Compose (recommended)
+
+The `docker-compose.yaml` already starts Redis alongside the application:
+
+```bash
+docker compose up -d
+```
+
+This starts two containers:
+
+- `redis` — Redis Alpine with password authentication
+- `web` — the Node.js application (connects to Redis via the `redis` hostname)
+
+---
+
 ## Running the API in Development Mode
 
 ```bash
@@ -360,25 +504,35 @@ The server will be running at `http://localhost:3000`.
 
 ## Running the API with Docker
 
-### 1. Create the environment file
+### With Docker Compose (recommended)
 
-Before starting the container, create the `.env` file with the required variables by copying the example file:
+The `docker-compose.yaml` starts the application and Redis together:
 
 ```bash
 cp .env.example .env
+docker compose up -d
 ```
 
-### 2. Build the Docker image
-
-From the backend directory, run:
+To check the containers:
 
 ```bash
+docker compose ps
+```
+
+To stop and remove:
+
+```bash
+docker compose down
+```
+
+### Application only (without Docker Compose)
+
+If you already have Redis running locally, you can start only the API container:
+
+```bash
+cp .env.example .env
+# Set REDIS_HOST to localhost in .env
 docker build -t api-furniro .
-```
-
-### 3. Run the container
-
-```bash
 docker run -p 3000:3000 --name api-furniro --env-file .env -d api-furniro
 ```
 
@@ -386,19 +540,6 @@ The backend will be available at:
 
 ```text
 http://localhost:3000
-```
-
-### 4. Check the container
-
-```bash
-docker ps -a
-```
-
-### 5. Stop and remove the container
-
-```bash
-docker stop api-furniro
-docker rm api-furniro
 ```
 
 ---
@@ -413,6 +554,51 @@ docker rm api-furniro
 - `POST /products` — creates a product
 - `PUT /products/:id` — updates a product
 - `DELETE /products/:id` — deletes a product
+
+### Authentication
+
+- `POST /auth/register` — registers a new user
+- `POST /auth/login` — authenticates and issues a JWT (httpOnly cookie)
+- `POST /auth/logout` — revokes the token and clears the cookie
+- `GET /auth/me` — returns the authenticated user's profile
+- `PATCH /auth/me` — updates the authenticated user's profile
+
+#### Register (`POST /auth/register`)
+
+Body:
+
+```json
+{
+  "name": "string (min 2)",
+  "surname": "string (min 2)",
+  "username": "string (min 3, unique)",
+  "email": "string (email, unique)",
+  "password": "string (min 6)"
+}
+```
+
+Response `201`: created user (without password).
+
+#### Login (`POST /auth/login`)
+
+Body:
+
+```json
+{
+  "email": "string",
+  "password": "string"
+}
+```
+
+Response `200`: `token` cookie (httpOnly, 24h) + user data.
+
+#### Logout (`POST /auth/logout`)
+
+Response `204`: revokes the JWT in Redis and clears the cookie.
+
+#### Profile (`GET /auth/me` / `PATCH /auth/me`)
+
+Requires a valid `token` cookie. Returns or updates the authenticated user's data.
 
 ### Query params supported for listing
 
@@ -442,6 +628,10 @@ Examples:
 - Added price sorting support with `_sort=price` and `_order=asc|desc`
 - Added the `slug` field for better compatibility with friendly URLs
 - Split the routes for detail lookup by `id` and by `slug`
+- JWT authentication with httpOnly cookies
+- Register, login, logout, and profile endpoints (`/auth/*`)
+- Authentication middleware with Redis-backed token blacklist
+- Request validation with Zod
 
 ---
 
@@ -455,7 +645,11 @@ The backend follows a layered organization to make maintenance and evolution eas
 - `src/routes` — defines the API routes
 - `src/factories` — builds the dependencies between controller, service, and repository
 - `src/model` — defines the types and contracts used in the project
+- `src/schemas` — Zod validation for request payloads
+- `src/middlewares` — JWT authentication and schema validation
 - `src/exceptions` — centralizes the application's custom errors
+- `src/lib/redis` — ioredis client (singleton)
+- `src/lib/cache` — cache abstraction (CacheClient) with Redis implementation
 
 This separation allows the repository implementation to be swapped without impacting the rest of the system.
 
@@ -478,6 +672,16 @@ This separation allows the repository implementation to be swapped without impac
 - `colors`: Serialized JSON array with color options (e.g.: `["#816DFA", "#000000"]`)
 - `sizes`: Serialized JSON array with size options (e.g.: `["L", "XL", "XS"]`)
 - `isNew`: Boolean flag indicating a new product
+
+### User Entity (Schema)
+
+- `id`: UUID (primary key)
+- `name`: User's first name
+- `surname`: User's last name
+- `username`: Unique username
+- `email`: Unique email
+- `password`: bcrypt-hashed password
+- `createdAt`: Creation date (auto)
 
 ### Expected format for creation/update (examples)
 
@@ -550,8 +754,4 @@ Note: if `limit` is greater than `100`, the API will return a 400 error.
 
 ## Authors / Autores
 
-- [Bruna Narciso](https://github.com/Bruna-Narciso)
-- [Bryan Belo](https://github.com/Badadia)
-- [Gian Lucas](https://github.com/gkgiann)
-- [Jefferson Tenório](https://github.com/Jefferson-Tenorio)
 - [Tulio Vasconcelos](https://github.com/heytulio)
